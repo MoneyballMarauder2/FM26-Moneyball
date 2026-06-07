@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FM26 Moneyball Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:    #09090b;
+    --bg2:   #18181b;
+    --bg3:   #27272a;
+    --bg4:   #3f3f46;
+    --bg5:   #52525b;
+    --border:  rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --border3: rgba(255,255,255,0.22);
+    --text:  #fafafa;
+    --text2: #a1a1aa;
+    --text3: #52525b;
+    --amber: #f59e0b;
+    --amber2:#d97706;
+    --green: #22c55e;
+    --green2:#16a34a;
+    --num:   'JetBrains Mono','Fira Code',ui-monospace,monospace;
+  }
+
+  html, body { height: 100%; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter','SF Pro Display',system-ui,sans-serif; font-size:13px; min-height:100vh; line-height:1.5; }
+
+  /* Header */
+  header { height:52px; padding:0 24px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:200; }
+  .hdr-logo { width:28px; height:28px; background:var(--amber); border-radius:7px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .hdr-logo svg { width:16px; height:16px; color:#fff; }
+  .hdr-title { font-size:13.5px; font-weight:600; letter-spacing:-.01em; color:var(--text); }
+  .hdr-title em { font-style:normal; color:var(--amber); }
+  .hdr-sep { width:1px; height:16px; background:var(--border2); flex-shrink:0; }
+  .hdr-sub { font-size:11px; color:var(--text3); }
+  .hdr-badge { margin-left:auto; font-size:11px; font-family:var(--num); color:var(--text3); display:none; }
+  .hdr-badge.visible { display:block; }
+
+  /* Tabs */
+  .tab-bar { height:40px; padding:0 24px; display:flex; align-items:center; gap:0; border-bottom:1px solid var(--border); background:var(--bg); }
+  .tab-btn { height:40px; padding:0 16px; font-size:12px; font-weight:500; cursor:pointer; border:none; background:none; color:var(--text3); border-bottom:2px solid transparent; transition:color .15s, border-color .15s; white-space:nowrap; }
+  .tab-btn:hover { color:var(--text2); }
+  .tab-btn.active { color:var(--text); border-bottom-color:var(--amber); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  .main { padding:24px; }
+
+  /* Dropzone */
+  #dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:12px; border:1px dashed var(--border2); background:var(--bg); transition:border-color .2s; position:relative; overflow:hidden; padding:48px 32px; text-align:center; margin-bottom:18px; }
+  #dropzone::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px); background-size:44px 44px; pointer-events:none; }
+  #dropzone:hover, #dropzone.drag { border-color:rgba(245,158,11,0.4); }
+  .dz-mark { width:52px; height:52px; background:var(--bg2); border:1px solid var(--border2); border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; transition:border-color .2s; }
+  .dz-mark svg { width:24px; height:24px; color:var(--text3); transition:color .2s; }
+  #dropzone:hover .dz-mark { border-color:rgba(245,158,11,0.5); }
+  #dropzone:hover .dz-mark svg { color:var(--amber); }
+  .dz-title { font-size:20px; font-weight:700; letter-spacing:-.03em; color:var(--text); margin-bottom:8px; }
+  .dz-sub { font-size:12px; color:var(--text3); line-height:1.75; max-width:340px; margin:0 auto 24px; }
+  .dz-cta { display:inline-flex; align-items:center; gap:7px; padding:10px 22px; border-radius:8px; background:var(--amber); color:#fff; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s; }
+  #dropzone:hover .dz-cta { background:var(--amber2); }
+  .dz-hint { margin-top:12px; font-size:11px; color:var(--text3); }
+  #fileInput { display:none; }
+
+  /* GK dropzone */
+  #gk-dropzone { display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border-radius:12px; border:1px dashed var(--border2); background:var(--bg); transition:border-color .2s; position:relative; overflow:hidden; padding:48px 32px; text-align:center; margin-bottom:18px; }
+  #gk-dropzone::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px); background-size:44px 44px; pointer-events:none; }
+  #gk-dropzone:hover, #gk-dropzone.drag { border-color:rgba(245,158,11,0.4); }
+  #gk-dropzone:hover .dz-mark { border-color:rgba(245,158,11,0.5); }
+  #gk-dropzone:hover .dz-mark svg { color:var(--amber); }
+  #gk-dropzone:hover .dz-cta { background:var(--amber2); }
+  #gkFileInput { display:none; }
+
+  /* Controls */
+  #controls { display:none; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  #controls.visible { display:flex; }
+  .filter-group { display:flex; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:3px; gap:2px; }
+  .grp-btn { padding:4px 13px; border-radius:5px; font-size:11px; font-weight:600; letter-spacing:.03em; cursor:pointer; border:none; background:transparent; color:var(--text3); transition:all .12s; }
+  .grp-btn:hover { color:var(--text2); }
+  .grp-btn.active-ALL { background:var(--bg3); color:var(--text); }
+  .grp-btn.active-DEF { background:rgba(59,130,246,0.18); color:#93c5fd; }
+  .grp-btn.active-MID { background:rgba(16,185,129,0.15); color:#6ee7b7; }
+  .grp-btn.active-FWD { background:rgba(168,85,247,0.15); color:#d8b4fe; }
+  .search-wrap { display:flex; align-items:center; gap:6px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:5px 10px; transition:border-color .15s; }
+  .search-wrap:focus-within { border-color:var(--border3); }
+  .search-wrap svg { color:var(--text3); flex-shrink:0; width:12px; height:12px; }
+  .ctrl-input { border:none; background:transparent; color:var(--text); font-size:12px; font-family:inherit; outline:none; min-width:0; }
+  .ctrl-input::placeholder { color:var(--text3); }
+  #nat-select { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:12px; font-family:inherit; outline:none; cursor:pointer; transition:border-color .15s; }
+  #nat-select:focus { border-color:var(--border3); }
+  #nat-select option { background:var(--bg2); }
+  #nat-select.active { border-color:var(--border3); color:var(--text); }
+  #clear-btn { background:none; border:1px solid rgba(239,68,68,0.2); color:#f87171; font-size:11px; font-family:inherit; cursor:pointer; padding:5px 11px; border-radius:8px; transition:background .15s; }
+  #clear-btn:hover { background:rgba(239,68,68,0.07); }
+  #count-label { font-size:11px; color:var(--text3); font-family:var(--num); padding:5px 10px; background:var(--bg2); border-radius:7px; border:1px solid var(--border); }
+  #load-btn { margin-left:auto; padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:11px; font-family:inherit; cursor:pointer; transition:all .15s; }
+  #load-btn:hover { background:var(--bg3); color:var(--text); border-color:var(--border2); }
+
+  /* Zone header row */
+  thead tr.zone-row th { padding:5px 6px; font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; text-align:center; border-bottom:1px solid var(--border); }
+  thead tr.zone-row th.z-info { color:var(--text3); background:var(--bg2); }
+  thead tr.zone-row th.z-def  { color:#60a5fa; background:rgba(59,130,246,0.07); border-bottom:2px solid rgba(59,130,246,0.5); }
+  thead tr.zone-row th.z-pos  { color:#34d399; background:rgba(16,185,129,0.07); border-bottom:2px solid rgba(16,185,129,0.5); }
+  thead tr.zone-row th.z-fin  { color:#c084fc; background:rgba(168,85,247,0.07); border-bottom:2px solid rgba(168,85,247,0.5); }
+
+  /* Table */
+  #table-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); display:none; }
+  #table-wrap.visible { display:block; }
+  table { border-collapse:collapse; width:100%; table-layout:fixed; min-width:1400px; }
+  thead tr.sec-row th { font-size:8px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); padding:6px 6px 5px; text-align:center; border-bottom:1px solid var(--border); }
+  thead tr.col-row th { padding:7px 5px; font-size:9px; font-weight:600; letter-spacing:.04em; text-align:center; color:var(--text3); background:var(--bg2); border-bottom:1px solid var(--border2); cursor:pointer; white-space:nowrap; user-select:none; transition:color .12s; text-transform:uppercase; }
+  thead tr.col-row th:hover { color:var(--text2); }
+  thead tr.col-row th.sorted { color:var(--amber); }
+  thead tr.col-row th:first-child { text-align:left; padding-left:14px; }
+  thead tr.filter-row td { padding:3px; background:var(--bg2); border-bottom:1px solid var(--border2); }
+  thead tr.filter-row td input { width:100%; padding:3px 5px; font-size:9px; font-family:var(--num); border-radius:4px; border:1px solid transparent; background:var(--bg3); color:var(--text2); outline:none; box-sizing:border-box; transition:border-color .12s; }
+  thead tr.filter-row td input:focus { border-color:rgba(245,158,11,0.4); }
+  thead tr.filter-row td input.active { border-color:rgba(245,158,11,0.5); background:rgba(245,158,11,0.05); color:var(--text); }
+  tbody tr:hover td { filter:brightness(1.18); }
+  tbody tr.odd  td { background:var(--bg2); }
+  tbody tr.even td { background:#111113; }
+  tbody td { padding:5px 5px; font-size:10.5px; font-family:var(--num); text-align:center; border-bottom:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text3); }
+  tbody td:first-child { text-align:left; font-family:'Inter',system-ui,sans-serif; font-size:12px; font-weight:600; letter-spacing:-.01em; color:var(--text); padding-left:14px; }
+  tbody td.grp-cell { font-family:var(--num); font-weight:700; font-size:8.5px; letter-spacing:.06em; }
+
+  /* Pagination */
+  #pagination { display:none; align-items:center; justify-content:center; gap:6px; margin-top:16px; flex-wrap:wrap; }
+  #pagination.visible { display:flex; }
+  .pg-btn { padding:5px 12px; border-radius:7px; border:1px solid var(--border); background:var(--bg2); color:var(--text2); font-size:12px; font-family:inherit; cursor:pointer; transition:all .12s; }
+  .pg-btn:hover:not(:disabled) { background:var(--bg3); color:var(--text); border-color:var(--border2); }
+  .pg-btn:disabled { opacity:.25; cursor:default; }
+  #pg-info { font-size:11px; color:var(--text3); min-width:80px; text-align:center; font-family:var(--num); }
+  #pg-jump { width:48px; padding:5px 6px; border-radius:7px; border:1px solid var(--border); background:var(--bg2); color:var(--text); font-size:11px; font-family:var(--num); text-align:center; outline:none; }
+
+  /* Legend */
+  #legend { display:none; flex-wrap:wrap; gap:6px; align-items:center; margin-top:14px; font-size:10px; color:var(--text3); padding:10px 14px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; }
+  #legend.visible { display:flex; }
+  .leg-badge { padding:3px 10px; border-radius:6px; font-weight:600; font-size:9.5px; letter-spacing:.03em; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/></svg>
+  </div>
+  <span class="hdr-title">FM26 <em>Moneyball</em></span>
+  <div class="hdr-sep"></div>
+  <span class="hdr-sub">MustermannFM percentile system</span>
+  <span class="hdr-badge" id="header-sub"></span>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-table" onclick="switchTab('table')">Player Table</button>
+  <button class="tab-btn" id="tab-pizza" onclick="switchTab('pizza')">Pizza Chart</button>
+  <button class="tab-btn" id="tab-gk" onclick="switchTab('gk')">Goalkeepers</button>
+</div>
+
+<div class="main">
+<div class="tab-panel active" id="panel-table">
+  <div id="dropzone">
+    <input type="file" id="fileInput" accept=".csv" style="display:none">
+    <div class="dz-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    </div>
+    <div class="dz-title">Drop your CSV export</div>
+    <div class="dz-sub">Export from FM26 with 1000+ minutes filter applied. Goalkeepers excluded automatically.</div>
+    <div class="dz-cta">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Browse files
+    </div>
+    <div class="dz-hint">or drag and drop anywhere</div>
+  </div>
+
+  <div id="controls">
+    <div class="filter-group">
+      <button class="grp-btn active-ALL" data-g="ALL">ALL</button>
+      <button class="grp-btn" data-g="DEF">DEF</button>
+      <button class="grp-btn" data-g="MID">MID</button>
+      <button class="grp-btn" data-g="FWD">FWD</button>
+    </div>
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="ctrl-input" id="name-search" placeholder="Search name…" style="width:130px">
+    </div>
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="ctrl-input" id="pos-search" placeholder="Position…" style="width:90px">
+    </div>
+    <select id="nat-select"><option value="">🌍 All nations</option></select>
+    <button id="clear-btn">✕ Clear</button>
+    <span id="count-label"></span>
+    <button id="load-btn">↑ Load new CSV</button>
+  </div>
+
+  <div id="table-wrap">
+    <table id="main-table">
+      <thead></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div id="pagination">
+    <button class="pg-btn" id="pg-first">«</button>
+    <button class="pg-btn" id="pg-prev">‹</button>
+    <span id="pg-info"></span>
+    <input id="pg-jump" type="number" min="1" placeholder="#">
+    <button class="pg-btn" id="pg-next">›</button>
+    <button class="pg-btn" id="pg-last">»</button>
+  </div>
+
+  <div id="legend">
+    <span>MustermannFM Feb 2026 thresholds:</span>
+    <span class="leg-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.25);">&lt; 20th</span>
+    <span class="leg-badge" style="background:rgba(249,115,22,0.12);color:#fb923c;border:1px solid rgba(249,115,22,0.25);">20–40th</span>
+    <span class="leg-badge" style="background:rgba(234,179,8,0.12);color:#fbbf24;border:1px solid rgba(234,179,8,0.25);">40–60th</span>
+    <span class="leg-badge" style="background:rgba(74,222,128,0.10);color:#4ade80;border:1px solid rgba(74,222,128,0.25);">60–80th</span>
+    <span class="leg-badge" style="background:rgba(34,197,94,0.18);color:#22c55e;border:1px solid rgba(34,197,94,0.3);">&gt; 80th</span>
+    <span style="margin-left:8px">· Min filter row below headers &nbsp;·&nbsp; Click column headers to sort &nbsp;·&nbsp; Page size: 100 rows</span>
+  </div>
+</div>
+
+<!-- PIZZA CHART TAB -->
+<div class="tab-panel" id="panel-pizza">
+  <div id="pizza-no-data" style="border:2px dashed var(--border2);border-radius:12px;padding:48px 32px;text-align:center;background:var(--bg2);margin-bottom:20px;">
+    <div style="font-size:36px;margin-bottom:10px;">🍕</div>
+    <h2 style="font-size:16px;font-weight:600;margin-bottom:6px;">Load a CSV first</h2>
+    <p style="font-size:12px;color:var(--text2);">Switch to the Player Table tab, load your CSV, then come back here.</p>
+  </div>
+  <div id="pizza-controls" style="display:none;">
+
+    <!-- Shared colour pickers + reset -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;background:var(--bg3);border-radius:8px;padding:8px 14px;border:1px solid var(--border);flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--text2);font-weight:600;">Zone colours:</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);">🥅 Defending <input type="color" id="colour-def" value="#3b82f6" style="width:32px;height:22px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:1px;background:none;"></label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);">🔄 Possession <input type="color" id="colour-pos" value="#10b981" style="width:32px;height:22px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:1px;background:none;"></label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);">⚡ Final Third <input type="color" id="colour-atk" value="#a855f7" style="width:32px;height:22px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:1px;background:none;"></label>
+      <button id="pizza-reset-colours" style="padding:3px 9px;border-radius:5px;border:1px solid var(--border2);background:none;color:var(--text2);font-size:11px;cursor:pointer;">↺ Reset</button>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3);">Scale: in-file percentile · Colour: Mustermann bands</span>
+    </div>
+
+    <!-- Two chart columns -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <!-- Chart A -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+          <input type="text" id="pizza-search-a" placeholder="🔍 Search player..." oninput="filterPizzaPlayers('a')" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;">
+          <select id="pizza-player-a" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;"></select>
+          <select id="pizza-group-a" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;">
+            <option value="DEF">DEF</option>
+            <option value="MID" selected>MID</option>
+            <option value="FWD">FWD</option>
+          </select>
+          <button onclick="drawBoth()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--blue-accent);background:var(--blue-accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Draw</button>
+        </div>
+        <div id="pizza-meta-a" style="font-size:10px;color:var(--text2);margin-bottom:8px;min-height:14px;"></div>
+        <div style="display:flex;justify-content:center;">
+          <canvas id="pizza-canvas-a" role="img" aria-label="Player A pizza chart" style="width:100%;max-width:460px;height:auto;display:block;"></canvas>
+        </div>
+        <div id="pizza-cards-a" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:4px;margin-top:10px;"></div>
+      </div>
+
+      <!-- Chart B -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+          <input type="text" id="pizza-search-b" placeholder="🔍 Search player..." oninput="filterPizzaPlayers('b')" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;">
+          <select id="pizza-player-b" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;"></select>
+          <select id="pizza-group-b" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;">
+            <option value="DEF">DEF</option>
+            <option value="MID" selected>MID</option>
+            <option value="FWD">FWD</option>
+          </select>
+          <button onclick="drawBoth()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--blue-accent);background:var(--blue-accent);color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Draw</button>
+        </div>
+        <div id="pizza-meta-b" style="font-size:10px;color:var(--text2);margin-bottom:8px;min-height:14px;"></div>
+        <div style="display:flex;justify-content:center;">
+          <canvas id="pizza-canvas-b" role="img" aria-label="Player B pizza chart" style="width:100%;max-width:460px;height:auto;display:block;"></canvas>
+        </div>
+        <div id="pizza-cards-b" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:4px;margin-top:10px;"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="tab-panel" id="panel-gk">
+<div class="main">
+  <div id="gk-dropzone">
+    <div class="dz-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+    </div>
+    <div class="dz-title">Drop your GK export</div>
+    <div class="dz-sub">Export goalkeepers from FM26 with 1000+ minutes · Include xGP/90, Poss Won/90, Pr passes/90, Poss Lost/90</div>
+    <div class="dz-cta">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Browse files
+    </div>
+    <div class="dz-hint">or drag and drop</div>
+    <input type="file" id="gkFileInput" accept=".csv">
+  </div>
+
+  <div id="gk-pizza-section" style="display:none">
+    <!-- GK colour pickers -->
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;background:var(--bg3);border-radius:8px;padding:8px 14px;border:1px solid var(--border);flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--text2);font-weight:600;">Zone colours:</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);">🧱 Shot Stop <input type="color" id="gk-colour-stp" value="#f97316" style="width:32px;height:22px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:1px;background:none;"></label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);">🧹 Sweeping <input type="color" id="gk-colour-swp" value="#3b82f6" style="width:32px;height:22px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:1px;background:none;"></label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);">🎯 Distribution <input type="color" id="gk-colour-dst" value="#10b981" style="width:32px;height:22px;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:1px;background:none;"></label>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3);">Scale: in-file percentile · Colour: in-file bands</span>
+    </div>
+
+    <!-- Dual GK pizza -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+          <input type="text" id="gk-search-a" placeholder="🔍 Search GK..." oninput="filterGKPlayers('a')" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;">
+          <select id="gk-player-a" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;"></select>
+        </div>
+        <canvas id="gk-canvas-a" style="width:100%;max-width:360px;display:block;margin:0 auto;"></canvas>
+        <div id="gk-meta-a" style="text-align:center;margin:8px 0;font-size:11px;color:var(--text2);"></div>
+        <div id="gk-cards-a" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;"></div>
+      </div>
+      <div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+          <input type="text" id="gk-search-b" placeholder="🔍 Search GK..." oninput="filterGKPlayers('b')" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;">
+          <select id="gk-player-b" style="flex:1;min-width:120px;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:11px;outline:none;"></select>
+        </div>
+        <canvas id="gk-canvas-b" style="width:100%;max-width:360px;display:block;margin:0 auto;"></canvas>
+        <div id="gk-meta-b" style="text-align:center;margin:8px 0;font-size:11px;color:var(--text2);"></div>
+        <div id="gk-cards-b" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const PAGE = 100;
+
+const T = {
+  DEF: {
+    'Blk/90':[0.56,0.62,0.68,0.75],'Clr/90':[0.90,1.03,1.13,1.28],'Int/90':[2.38,2.65,2.88,3.12],
+    'Tck A':[0.87,1.07,2.25,3.48],'Tck R':[72.4,74.7,76.7,79.0],'Aer A/90':[3.15,3.82,4.57,5.35],
+    'Hdr %':[52.4,60.8,65.6,70.7],'Poss Won/90':[8.33,9.09,9.77,10.54],'Ps A/90':[50.96,56.45,62.33,69.88],
+    'Pr passes/90':[3.19,4.44,6.18,7.95],'Drb/90':[0.04,0.08,0.55,1.75],'Poss Lost/90':[12.01,8.18,4.90,4.05],
+    'KP/90':[0.20,0.29,0.77,1.39],'xA/90':[0.02,0.03,0.06,0.13],'Shot/90':[0.25,0.34,0.48,0.68],
+    'xG/90':[0.01,0.02,0.03,0.04],'Goals per 90 minutes':[0.01,0.02,0.03,0.05],
+  },
+  MID: {
+    'Blk/90':[0.27,0.40,0.51,0.61],'Clr/90':[0.49,0.70,0.84,1.01],'Int/90':[1.96,2.32,2.52,2.86],
+    'Tck A':[1.49,1.98,2.34,2.72],'Tck R':[67.3,69.8,72.4,74.7],'Aer A/90':[1.67,2.16,2.64,3.45],
+    'Hdr %':[27.0,36.1,44.8,54.4],'Poss Won/90':[5.63,6.92,7.82,8.53],'Ps A/90':[48.62,54.66,60.74,68.83],
+    'Pr passes/90':[3.69,5.02,5.82,6.91],'Drb/90':[0.22,0.37,0.72,1.56],'Poss Lost/90':[10.21,8.44,7.15,6.04],
+    'KP/90':[0.87,1.2,1.6,2.08],'xA/90':[0.06,0.09,0.13,0.19],'Shot/90':[0.88,1.17,1.57,2.02],
+    'xG/90':[0.04,0.06,0.11,0.22],'Goals per 90 minutes':[0.04,0.07,0.11,0.23],
+  },
+  FWD: {
+    'Blk/90':[0.10,0.16,0.24,0.32],'Clr/90':[0.17,0.31,0.49,0.64],'Int/90':[0.90,1.37,1.97,2.34],
+    'Tck A':[0.48,1.24,2.34,2.94],'Tck R':[65.3,70.7,74.0,76.6],'Aer A/90':[2.92,3.60,4.94,6.86],
+    'Hdr %':[19.5,26.9,33.5,40.3],'Poss Won/90':[2.47,4.16,6.52,7.52],'Ps A/90':[28.63,35.10,43.27,50.29],
+    'Pr passes/90':[0.98,2.10,3.55,4.75],'Drb/90':[0.84,1.63,3.43,5.62],'Poss Lost/90':[14.95,12.36,8.53,6.12],
+    'KP/90':[1.18,1.53,1.95,2.31],'xA/90':[0.12,0.16,0.21,0.26],'Shot/90':[1.96,2.22,2.47,2.81],
+    'xG/90':[0.21,0.26,0.32,0.40],'Goals per 90 minutes':[0.22,0.29,0.37,0.47],
+  },
+};
+
+const INFO_COLS = [
+  {key:'Player',label:'Player',w:160},
+  {key:'Club',label:'Club',w:110},
+  {key:'Division',label:'Division',w:100},
+  {key:'Age',label:'Age',w:36},
+  {key:'Best Pos',label:'Pos',w:80},
+  {key:'_group',label:'Grp',w:38},
+  {key:'Minutes',label:'Mins',w:48},
+  {key:'Transfer Value',label:'Value',w:105},
+];
+const STAT_COLS = [
+  {key:'Blk/90',label:'Blk/90',s:'DEF'},{key:'Clr/90',label:'Clr/90',s:'DEF'},{key:'Int/90',label:'Int/90',s:'DEF'},
+  {key:'Tck A',label:'TckA',s:'DEF'},{key:'Tck R',label:'Tck%',s:'DEF'},{key:'Aer A/90',label:'Aer/90',s:'DEF'},{key:'Hdr %',label:'Hdr%',s:'DEF'},
+  {key:'Poss Won/90',label:'PW/90',s:'POS'},{key:'Ps A/90',label:'PsA/90',s:'POS'},{key:'Pr passes/90',label:'Prg/90',s:'POS'},{key:'Drb/90',label:'Drb/90',s:'POS'},{key:'Poss Lost/90',label:'PL/90',s:'POS'},
+  {key:'KP/90',label:'KP/90',s:'ATT'},{key:'xA/90',label:'xA/90',s:'ATT'},{key:'Shot/90',label:'Sht/90',s:'ATT'},{key:'xG/90',label:'xG/90',s:'ATT'},{key:'Goals per 90 minutes',label:'Gls/90',s:'ATT'},
+];
+const ALL_COLS = [...INFO_COLS, ...STAT_COLS.map(c=>({...c,w:58}))];
+const STAT_KEYS = new Set(STAT_COLS.map(c=>c.key));
+
+const SEC_BG = {
+  DEF:  'rgba(79,142,245,0.07)',
+  POS:  'rgba(16,185,129,0.07)',
+  ATT:  'rgba(168,85,247,0.07)',
+  INFO: 'transparent'
+};
+const GRP_BG  = {DEF:'#1e3a5f',MID:'#134e2a',FWD:'#2e1065'};
+const GRP_COL = {DEF:'#60a5fa',MID:'#34d399',FWD:'#c4b5fd'};
+
+function getGroup(pos) {
+  if(!pos) return 'FWD';
+  if(pos.includes('GK')) return 'GK';
+  if(pos.startsWith('D ')||pos.startsWith('WB')||(pos.startsWith('D/')&&!pos.includes('AM'))) return 'DEF';
+  if(pos.includes('DM')||pos.includes('M (')||pos.startsWith('M/')) return 'MID';
+  return 'FWD';
+}
+
+// Stats where lower = better (colours inverted)
+const INVERSE_STATS = new Set(['Poss Lost/90']);
+
+// Returns {bg, color} — top/bottom bands get solid dark bg, middle bands get subtle tint
+function cellColor(val, key, grp) {
+  const th = T[grp]?.[key]; if(!th) return null;
+  const v = parseFloat(val); if(isNaN(v)) return null;
+  const [p20,p40,p60,p80] = th;
+  const inv = INVERSE_STATS.has(key);
+  let band;
+  if(inv) {
+    if(v<=p80)      band=4;
+    else if(v<=p60) band=3;
+    else if(v<=p40) band=2;
+    else if(v<=p20) band=1;
+    else            band=0;
+  } else {
+    if(v>=p80)      band=4;
+    else if(v>=p60) band=3;
+    else if(v>=p40) band=2;
+    else if(v>=p20) band=1;
+    else            band=0;
+  }
+  // band 4 = elite, 0 = poor
+  const palette = [
+    {bg:'rgba(239,68,68,0.12)',   color:'#f87171'},  // 0 poor
+    {bg:'rgba(249,115,22,0.10)',  color:'#fb923c'},  // 1 below avg
+    {bg:'rgba(234,179,8,0.10)',   color:'#fbbf24'},  // 2 average
+    {bg:'rgba(74,222,128,0.09)',  color:'#4ade80'},  // 3 good
+    {bg:'rgba(34,197,94,0.18)',   color:'#22c55e'},  // 4 elite
+  ];
+  return palette[band];
+}
+
+function parseCSV(txt) {
+  // Strip BOM if present
+  if(txt.charCodeAt(0)===0xFEFF) txt=txt.slice(1);
+  const lines = txt.trim().split(/\r?\n/);
+  if(lines.length<2) return [];
+  // Auto-detect delimiter: semicolon or comma
+  const delim = lines[0].includes(';') ? ';' : ',';
+  const hdrs = lines[0].split(delim).map(h=>h.trim());
+  return lines.slice(1).map(line=>{
+    const vals=[]; let cur='', inQ=false;
+    for(let c of line){if(c==='"'){inQ=!inQ}else if(c===delim&&!inQ){vals.push(cur.trim());cur='';}else cur+=c;}
+    vals.push(cur.trim());
+    const obj={}; hdrs.forEach((h,i)=>obj[h]=(vals[i]||'').trim()); return obj;
+  });
+}
+
+// State
+let allPlayers = [];
+let filtered = [];
+let sortCol = null, sortDir = 'desc';
+let groupFilter = 'ALL';
+let nameSearch = '', posSearch = '', natFilter = '';
+let minFilters = {};
+let page = 0;
+
+// Build thead once
+function buildThead() {
+  const thead = document.querySelector('#main-table thead');
+  thead.innerHTML = '';
+
+  // Zone header row (Wyscout-style coloured zone bands)
+  const zoneRow = document.createElement('tr');
+  zoneRow.className = 'zone-row';
+  const defCols = ALL_COLS.filter(c=>c.s==='DEF').length;
+  const posCols = ALL_COLS.filter(c=>c.s==='POS').length;
+  const finCols = ALL_COLS.filter(c=>c.s==='FIN').length;
+  const infoTh = document.createElement('th');
+  infoTh.colSpan = INFO_COLS.length; infoTh.className='z-info'; zoneRow.appendChild(infoTh);
+  const defTh = document.createElement('th');
+  defTh.colSpan = defCols; defTh.className='z-def'; defTh.textContent='Defending'; zoneRow.appendChild(defTh);
+  const posTh = document.createElement('th');
+  posTh.colSpan = posCols; posTh.className='z-pos'; posTh.textContent='Possession'; zoneRow.appendChild(posTh);
+  const finTh = document.createElement('th');
+  finTh.colSpan = finCols; finTh.className='z-fin'; finTh.textContent='Final Third'; zoneRow.appendChild(finTh);
+  thead.appendChild(zoneRow);
+
+  // Section row
+  const secRow = document.createElement('tr');
+  secRow.className = 'sec-row';
+  const sections = [
+    {label:'',cols:INFO_COLS,bg:SEC_BG.INFO},
+    {label:'DEFENDING',cols:STAT_COLS.filter(c=>c.s==='DEF'),bg:SEC_BG.DEF},
+    {label:'POSSESSION',cols:STAT_COLS.filter(c=>c.s==='POS'),bg:SEC_BG.POS},
+    {label:'FINAL THIRD',cols:STAT_COLS.filter(c=>c.s==='ATT'),bg:SEC_BG.ATT},
+  ];
+  sections.forEach(({label,cols,bg})=>{
+    const th = document.createElement('th');
+    th.colSpan = cols.length;
+    th.textContent = label;
+    th.style.background = bg;
+    th.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+    secRow.appendChild(th);
+  });
+  thead.appendChild(secRow);
+
+  // Col header row
+  const colRow = document.createElement('tr');
+  colRow.className = 'col-row';
+  ALL_COLS.forEach(col=>{
+    const th = document.createElement('th');
+    th.dataset.key = col.key;
+    th.style.width = col.w+'px';
+    th.style.background = col.s ? SEC_BG[col.s] : SEC_BG.INFO;
+    th.addEventListener('click', ()=>doSort(col.key));
+    colRow.appendChild(th);
+  });
+  thead.appendChild(colRow);
+
+  // Filter row
+  const filterRow = document.createElement('tr');
+  filterRow.className = 'filter-row';
+  ALL_COLS.forEach(col=>{
+    const td = document.createElement('td');
+    td.style.background = col.s ? SEC_BG[col.s] : SEC_BG.INFO;
+    if(STAT_KEYS.has(col.key)){
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.placeholder = 'min';
+      inp.step = '0.01';
+      inp.dataset.key = col.key;
+      inp.addEventListener('input', ()=>{
+        minFilters[col.key] = inp.value;
+        inp.classList.toggle('active', inp.value!=='');
+        applyFilters();
+      });
+      td.appendChild(inp);
+    }
+    filterRow.appendChild(td);
+  });
+  thead.appendChild(filterRow);
+
+  updateColHeaders();
+}
+
+function updateColHeaders() {
+  document.querySelectorAll('thead tr.col-row th').forEach(th=>{
+    const key = th.dataset.key;
+    const col = ALL_COLS.find(c=>c.key===key);
+    const arrow = key===sortCol?(sortDir==='desc'?' ↓':' ↑'):'';
+    th.textContent = (col?.label||key)+arrow;
+    th.classList.toggle('sorted', key===sortCol);
+  });
+}
+
+function doSort(key) {
+  if(sortCol===key) sortDir = sortDir==='desc'?'asc':'desc';
+  else { sortCol=key; sortDir='desc'; }
+  applyFilters();
+}
+
+function applyFilters() {
+  let r = allPlayers;
+  if(groupFilter!=='ALL') r = r.filter(p=>p._group===groupFilter);
+  if(nameSearch) r = r.filter(p=>(p.Player||'').toLowerCase().includes(nameSearch));
+  if(posSearch) r = r.filter(p=>(p['Best Pos']||'').toLowerCase().includes(posSearch));
+  if(natFilter) r = r.filter(p=>(p.Nation||'')=== natFilter);
+  Object.entries(minFilters).forEach(([k,v])=>{
+    if(v!==''){const m=parseFloat(v);if(!isNaN(m))r=r.filter(p=>parseFloat(p[k])>=m);}
+  });
+  if(sortCol){
+    r=[...r].sort((a,b)=>{
+      const av=parseFloat(a[sortCol]),bv=parseFloat(b[sortCol]);
+      if(!isNaN(av)&&!isNaN(bv)) return sortDir==='desc'?bv-av:av-bv;
+      return sortDir==='desc'?(b[sortCol]||'').localeCompare(a[sortCol]||''):(a[sortCol]||'').localeCompare(b[sortCol]||'');
+    });
+  }
+  filtered = r;
+  page = 0;
+  updateColHeaders();
+  render();
+}
+
+function render() {
+  const totPg = Math.max(1,Math.ceil(filtered.length/PAGE));
+  page = Math.min(page, totPg-1);
+  const paged = filtered.slice(page*PAGE,(page+1)*PAGE);
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML='';
+
+  const counts = {DEF:0,MID:0,FWD:0};
+  allPlayers.forEach(p=>{if(counts[p._group]!==undefined)counts[p._group]++;});
+
+  // update group buttons
+  document.querySelectorAll('.grp-btn').forEach(btn=>{
+    const g = btn.dataset.g;
+    btn.className = 'grp-btn';
+    const label = g==='ALL'?`ALL (${allPlayers.length})`:g==='DEF'?`DEF (${counts.DEF})`:g==='MID'?`MID (${counts.MID})`:`FWD (${counts.FWD})`;
+    btn.textContent = label;
+    if(g===groupFilter) btn.classList.add('active-'+g);
+  });
+
+  document.getElementById('count-label').textContent = `${filtered.length} players shown`;
+
+  paged.forEach((p,ri)=>{
+    const tr = document.createElement('tr');
+    tr.className = ri%2===0?'even':'odd';
+    ALL_COLS.forEach(col=>{
+      const td = document.createElement('td');
+      const val = p[col.key]||'';
+      const isStat = STAT_KEYS.has(col.key);
+      const isGrp = col.key==='_group';
+      const isPlayer = col.key==='Player';
+      const isClub = col.key==='Club';
+      const isDiv = col.key==='Division';
+
+      if(isStat){
+        const cc = cellColor(val, col.key, p._group);
+        if(cc){
+          td.style.background = cc.bg;
+          td.style.color = cc.color;
+          td.style.fontWeight = '600';
+        } else {
+          td.style.color = 'var(--text3)';
+        }
+        td.textContent = val&&!isNaN(parseFloat(val))?parseFloat(val).toFixed(2):val;
+      } else if(isGrp){
+        td.className = 'grp-cell';
+        td.style.background = GRP_BG[val]||'var(--bg3)';
+        td.style.color = GRP_COL[val]||'var(--text2)';
+        td.textContent = val;
+      } else if(isPlayer){
+        td.style.fontWeight = '700';
+        td.style.color = 'var(--text)';
+        td.style.fontSize = '11.5px';
+        td.textContent = val;
+      } else if(isClub){
+        td.style.color = 'var(--text2)';
+        td.style.fontSize = '10.5px';
+        td.textContent = val;
+      } else if(isDiv){
+        td.style.color = 'var(--text3)';
+        td.style.fontSize = '10px';
+        td.textContent = val;
+      } else {
+        td.textContent = val;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // pagination
+  document.getElementById('pg-info').textContent = `Page ${page+1} / ${totPg}`;
+  document.getElementById('pg-first').disabled = page===0;
+  document.getElementById('pg-prev').disabled = page===0;
+  document.getElementById('pg-next').disabled = page>=totPg-1;
+  document.getElementById('pg-last').disabled = page>=totPg-1;
+}
+
+function loadData(txt) {
+  const rows = parseCSV(txt).map(p=>({...p,_group:getGroup(p['Best Pos'])})).filter(p=>p._group!=='GK');
+  allPlayers = rows;
+  sortCol=null; sortDir='desc'; groupFilter='ALL'; nameSearch=''; posSearch=''; natFilter=''; minFilters={}; page=0;
+  document.getElementById('name-search').value='';
+  document.getElementById('pos-search').value='';
+  document.querySelectorAll('thead tr.filter-row input').forEach(i=>{i.value='';i.classList.remove('active');});
+
+  // Populate nationality dropdown
+  const natSel = document.getElementById('nat-select');
+  const nations = [...new Set(rows.map(p=>p.Nation||'').filter(Boolean))].sort();
+  natSel.innerHTML = '<option value="">🌍 All nations</option>';
+  nations.forEach(n=>{
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    natSel.appendChild(opt);
+  });
+  natSel.value = '';
+  natSel.classList.remove('active');
+
+// Also populate pizza player dropdowns
+  const sorted = [...rows].sort((a,b)=>(a.Player||'').localeCompare(b.Player||''));
+  ['pizza-player-a','pizza-player-b'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    sorted.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.Player;
+      opt.textContent = `${p.Player} (${p['Best Pos']||''}, ${p.Age||''})`;
+      sel.appendChild(opt);
+    });
+  });
+  // Default B to second player if available
+  if(sorted.length > 1) document.getElementById('pizza-player-b').value = sorted[1].Player;
+  // Auto-set groups based on first players
+  if(sorted.length > 0 && sorted[0]._group !== 'GK') document.getElementById('pizza-group-a').value = sorted[0]._group;
+  if(sorted.length > 1 && sorted[1]._group !== 'GK') document.getElementById('pizza-group-b').value = sorted[1]._group;
+  document.getElementById('pizza-no-data').style.display = 'none';
+  document.getElementById('pizza-controls').style.display = 'block';
+  document.getElementById('controls').classList.add('visible');
+  document.getElementById('table-wrap').classList.add('visible');
+  document.getElementById('pagination').classList.add('visible');
+  document.getElementById('legend').classList.add('visible');
+  const headerSub = document.getElementById('header-sub');
+  headerSub.textContent = `${rows.length} players`;
+  headerSub.classList.add('visible');
+  buildThead();
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════
+// GK PIZZA CHART
+// ═══════════════════════════════════════════════════════
+
+const GK_PIZZA_STATS = {
+  'Con/90':    {key:'Goals Conceded', derived:'per90', th:[1.5,1.2,1.0,0.8],   g:'stp', inv:true},
+  'xGP/90':   {key:'xGP/90',                          th:[-0.1,0.0,0.1,0.2],  g:'stp'},
+  'Poss Won':  {key:'Poss Won/90',                     th:[5,7,9,11],           g:'swp'},
+  'Pas A/90':  {key:'Pas A', derived:'per90',           th:[25,35,45,55],        g:'dst'},
+  'Prog Pass': {key:'Pr passes/90',                    th:[0.2,0.5,0.8,1.2],    g:'dst'},
+  'Poss Lost': {key:'Poss Lost/90',                    th:[10,7,5,3],           g:'dst', inv:true},
+};
+
+let allGKPlayers = [];
+
+function getGKStatVal(player, stat) {
+  if(stat.derived === 'per90') {
+    const raw = parseFloat(player[stat.key]) || 0;
+    const mins = parseFloat(player['Minutes']) || 90;
+    return mins > 0 ? (raw / mins) * 90 : 0;
+  }
+  return parseFloat(player[stat.key]) || 0;
+}
+
+function getGKInFilePct(val, statKey, derived, inv) {
+  const vals = allGKPlayers.map(p => {
+    if(derived === 'per90') {
+      const raw = parseFloat(p[statKey]) || 0;
+      const mins = parseFloat(p['Minutes']) || 90;
+      return mins > 0 ? (raw / mins) * 90 : 0;
+    }
+    return parseFloat(p[statKey]) || 0;
+  }).sort((a,b) => a-b);
+  if(!vals.length) return 0.5;
+  const n = vals.length;
+  const below = vals.filter(v => v < val).length;
+  const equal = vals.filter(v => v === val).length;
+  const pct = (below + equal * 0.5) / n;
+  return Math.max(0.06, inv ? 1 - pct : pct);
+}
+
+function getPizzaCardColorForPct(pct) {
+  if(pct >= 80) return '#22c55e';
+  if(pct >= 60) return '#4ade80';
+  if(pct >= 40) return '#fbbf24';
+  if(pct >= 20) return '#fb923c';
+  return '#f87171';
+}
+
+function drawGKChart(canvasId, metaId, cardsId, playerName) {
+  const player = allGKPlayers.find(p => p.Player === playerName);
+  if(!player) return;
+
+  const stats = GK_PIZZA_STATS;
+  const labels = Object.keys(stats);
+  const n = labels.length;
+  const DISPLAY = 380;
+
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = DISPLAY * dpr; canvas.height = DISPLAY * dpr;
+  canvas.style.width = DISPLAY + 'px'; canvas.style.height = DISPLAY + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, DISPLAY, DISPLAY);
+
+  const cx = DISPLAY/2, cy = DISPLAY/2;
+  const maxR = DISPLAY * 0.28;
+  const labelR = maxR + DISPLAY * 0.12;
+  const sliceAngle = (2*Math.PI)/n;
+  const startAngle = -Math.PI/2;
+
+  const stpHex = document.getElementById('gk-colour-stp')?.value || '#f97316';
+  const swpHex = document.getElementById('gk-colour-swp')?.value || '#3b82f6';
+  const dstHex = document.getElementById('gk-colour-dst')?.value || '#10b981';
+  const GK_ZONE_COL = {
+    stp: hexToRgba(stpHex, 0.88),
+    swp: hexToRgba(swpHex, 0.88),
+    dst: hexToRgba(dstHex, 0.88),
+  };
+  const GK_ZONE_DOT = {
+    stp: hexToRgba(stpHex, 1.0),
+    swp: hexToRgba(swpHex, 1.0),
+    dst: hexToRgba(dstHex, 1.0),
+  };
+
+  // Raw values
+  const rawVals = labels.map(l => getGKStatVal(player, stats[l]));
+  const inFilePcts = labels.map((l,i) => {
+    const s = stats[l];
+    const pct = getGKInFilePct(rawVals[i], s.key, s.derived, s.inv||false);
+    return Math.min(99, Math.round(pct * 100));
+  });
+
+  // Ring guides
+  [0.25, 0.5, 0.75, 1.0].forEach(frac => {
+    ctx.beginPath(); ctx.arc(cx, cy, maxR*frac, 0, 2*Math.PI);
+    ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // Dividers
+  for(let i=0;i<n;i++){
+    const ang = startAngle + i*sliceAngle;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(ang)*maxR, cy+Math.sin(ang)*maxR);
+    ctx.strokeStyle='rgba(14,17,23,0.95)'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+
+  // 80th ring
+  ctx.beginPath(); ctx.arc(cx,cy,maxR*0.92,0,2*Math.PI);
+  ctx.strokeStyle='rgba(220,220,220,0.22)'; ctx.lineWidth=1.2;
+  ctx.setLineDash([4,5]); ctx.stroke(); ctx.setLineDash([]);
+
+  // Slices
+  for(let i=0;i<n;i++){
+    const l = labels[i];
+    const s = stats[l];
+    const rawPct = Math.min(0.99, Math.max(0.06, getGKInFilePct(rawVals[i], s.key, s.derived, s.inv||false)));
+    const remapped = rawPct <= 0.8 ? 0.06 + (rawPct/0.8)*(0.92-0.06) : 0.92 + ((rawPct-0.8)/0.2)*(0.99-0.92);
+    const r = remapped * maxR;
+    const aS = startAngle+i*sliceAngle, aE = aS+sliceAngle;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,aS,aE); ctx.closePath();
+    ctx.fillStyle = GK_ZONE_COL[s.g]; ctx.fill();
+    ctx.strokeStyle='rgba(14,17,23,0.95)'; ctx.lineWidth=1.2; ctx.stroke();
+  }
+
+  // Centre
+  const cR = maxR*0.15;
+  ctx.beginPath(); ctx.arc(cx,cy,cR,0,2*Math.PI);
+  ctx.fillStyle='rgba(15,15,18,0.95)'; ctx.fill();
+  ctx.strokeStyle='rgba(245,158,11,0.4)'; ctx.lineWidth=1.2; ctx.stroke();
+  ctx.fillStyle='rgba(245,158,11,0.9)';
+  ctx.font=`bold ${Math.round(cR*0.58)}px Segoe UI,system-ui,sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('GK', cx, cy);
+
+  // Labels
+  for(let i=0;i<n;i++){
+    const l = labels[i];
+    const s = stats[l];
+    const pct = inFilePcts[i];
+    const midAngle = startAngle + i*sliceAngle + sliceAngle/2;
+    const lx = cx + Math.cos(midAngle)*labelR;
+    const ly = cy + Math.sin(midAngle)*labelR;
+    const dotDist = maxR + DISPLAY*0.016;
+    ctx.beginPath(); ctx.arc(cx+Math.cos(midAngle)*dotDist, cy+Math.sin(midAngle)*dotDist, 2.5, 0, 2*Math.PI);
+    ctx.fillStyle = GK_ZONE_DOT[s.g]; ctx.fill();
+    const cosA = Math.cos(midAngle);
+    ctx.textAlign = cosA > 0.05 ? 'left' : cosA < -0.05 ? 'right' : 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle='rgba(180,190,210,0.9)'; ctx.font='9.5px Segoe UI,system-ui,sans-serif';
+    ctx.fillText(l, lx, ly-5.5);
+    const dispVal = s.inv ? rawVals[i].toFixed(2) : (s.key==='xGP/90' ? rawVals[i].toFixed(2) : rawVals[i].toFixed(2));
+    ctx.fillStyle = getPizzaCardColorForPct(pct); ctx.font='600 9.5px Segoe UI,system-ui,sans-serif';
+    ctx.fillText(dispVal, lx, ly+5.5);
+  }
+
+  // Meta
+  const metaEl = document.getElementById(metaId);
+  if(metaEl) {
+    const flag = FLAGS[player.Nation] || FLAGS[player['Based In']] || '🌍';
+    metaEl.innerHTML = `<strong style="font-size:13px">${player.Player}</strong> <span style="color:var(--text3)">GK · ${player.Age} · ${flag} · ${player.Club || '—'}</span>`;
+  }
+
+  // Cards
+  const cardsEl = document.getElementById(cardsId);
+  if(!cardsEl) return;
+  const ZONE_LABEL = {stp:'🧱 Shot Stop', swp:'🧹 Sweeping', dst:'🎯 Distribution'};
+  const ZONE_COL_CSS = {stp:stpHex, swp:swpHex, dst:dstHex};
+  let html2 = '';
+  Object.keys({stp:1,swp:1,dst:1}).forEach(zone => {
+    const zLabels = labels.filter(l => stats[l].g === zone);
+    if(!zLabels.length) return;
+    html2 += `<div style="grid-column:1/-1;font-size:9px;font-weight:700;color:${ZONE_COL_CSS[zone]};text-transform:uppercase;letter-spacing:.06em;margin-top:4px;margin-bottom:2px;">${ZONE_LABEL[zone]}</div>`;
+    zLabels.forEach(l => {
+      const i = labels.indexOf(l);
+      const pct = inFilePcts[i];
+      const col = getPizzaCardColorForPct(pct);
+      const ordinal = (p => { const s=['th','st','nd','rd'],v=p%100; return p+(s[(v-20)%10]||s[v]||s[0]); })(pct);
+      html2 += `<div style="background:var(--bg3);border-radius:5px;padding:5px 6px;text-align:center;border-top:2px solid ${ZONE_COL_CSS[zone]};">
+        <div style="font-size:8px;color:var(--text2);margin-bottom:2px;">${l}${stats[l].inv?'↓':''}</div>
+        <div style="font-size:11px;font-weight:600;color:${col};">${rawVals[i].toFixed(2)}</div>
+        <div style="font-size:8px;color:${col};">${ordinal}</div>
+      </div>`;
+    });
+  });
+  cardsEl.innerHTML = html2;
+}
+
+function drawBothGK() {
+  const a = document.getElementById('gk-player-a')?.value;
+  const b = document.getElementById('gk-player-b')?.value;
+  if(a) drawGKChart('gk-canvas-a','gk-meta-a','gk-cards-a',a);
+  if(b) drawGKChart('gk-canvas-b','gk-meta-b','gk-cards-b',b);
+}
+
+function filterGKPlayers(side) {
+  const query = document.getElementById(`gk-search-${side}`)?.value.toLowerCase()||'';
+  const sel = document.getElementById(`gk-player-${side}`);
+  if(!sel) return;
+  sel.innerHTML = '';
+  allGKPlayers.filter(p => p.Player.toLowerCase().includes(query)).forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.Player;
+    opt.textContent = `${p.Player} (${p.Age}, ${p.Club||'—'})`;
+    sel.appendChild(opt);
+  });
+}
+
+function loadGKData(txt) {
+  const rows = parseCSV(txt).filter(p => (p['Best Pos']||'').includes('GK') || !p['Best Pos']);
+  allGKPlayers = rows.filter(p => parseFloat(p['Minutes']||0) >= 500);
+
+  // Populate dropdowns
+  ['a','b'].forEach(side => {
+    filterGKPlayers(side);
+    const sel = document.getElementById(`gk-player-${side}`);
+    if(sel && sel.options.length > (side==='b' ? 1 : 0)) {
+      sel.selectedIndex = side === 'b' ? Math.min(1, sel.options.length-1) : 0;
+    }
+  });
+
+  // Colour picker listeners
+  ['gk-colour-stp','gk-colour-swp','gk-colour-dst'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', drawBothGK);
+  });
+
+  document.getElementById('gk-dropzone').style.display = 'none';
+  document.getElementById('gk-pizza-section').style.display = 'block';
+  drawBothGK();
+}
+
+// GK file input events
+document.addEventListener('DOMContentLoaded', () => {
+  const gkDz = document.getElementById('gk-dropzone');
+  const gkFi = document.getElementById('gkFileInput');
+  if(gkDz && gkFi) {
+    gkDz.addEventListener('click', () => gkFi.click());
+    gkFi.addEventListener('change', e => {
+      const f = e.target.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = ev => loadGKData(ev.target.result);
+      r.readAsText(f);
+    });
+    gkDz.addEventListener('dragover', e => { e.preventDefault(); gkDz.classList.add('drag'); });
+    gkDz.addEventListener('dragleave', () => gkDz.classList.remove('drag'));
+    gkDz.addEventListener('drop', e => {
+      e.preventDefault(); gkDz.classList.remove('drag');
+      const f = e.dataTransfer.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = ev => loadGKData(ev.target.result);
+      r.readAsText(f);
+    });
+  }
+});
+
+// GK player dropdown listeners
+document.addEventListener('change', e => {
+  if(e.target.id === 'gk-player-a') drawGKChart('gk-canvas-a','gk-meta-a','gk-cards-a', e.target.value);
+  if(e.target.id === 'gk-player-b') drawGKChart('gk-canvas-b','gk-meta-b','gk-cards-b', e.target.value);
+});
+document.getElementById('dropzone').addEventListener('click', ()=>document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=ev=>loadData(ev.target.result); r.readAsText(f);
+});
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag');
+  const f=e.dataTransfer.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=ev=>loadData(ev.target.result); r.readAsText(f);
+});
+
+document.getElementById('load-btn').addEventListener('click',()=>document.getElementById('fileInput').click());
+
+document.querySelectorAll('.grp-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{groupFilter=btn.dataset.g;applyFilters();});
+});
+
+document.getElementById('name-search').addEventListener('input',e=>{nameSearch=e.target.value.toLowerCase();applyFilters();});
+document.getElementById('pos-search').addEventListener('input',e=>{posSearch=e.target.value.toLowerCase();applyFilters();});
+document.getElementById('nat-select').addEventListener('change',e=>{
+  natFilter=e.target.value;
+  e.target.classList.toggle('active', natFilter!=='');
+  applyFilters();
+});
+
+document.getElementById('clear-btn').addEventListener('click',()=>{
+  groupFilter='ALL'; nameSearch=''; posSearch=''; natFilter=''; minFilters={};
+  document.getElementById('name-search').value='';
+  document.getElementById('pos-search').value='';
+  const natSel=document.getElementById('nat-select');
+  natSel.value=''; natSel.classList.remove('active');
+  document.querySelectorAll('thead tr.filter-row input').forEach(i=>{i.value='';i.classList.remove('active');});
+  applyFilters();
+});
+
+document.getElementById('pg-first').addEventListener('click',()=>{page=0;render();});
+document.getElementById('pg-prev').addEventListener('click',()=>{page=Math.max(0,page-1);render();});
+document.getElementById('pg-next').addEventListener('click',()=>{page=Math.min(Math.ceil(filtered.length/PAGE)-1,page+1);render();});
+document.getElementById('pg-last').addEventListener('click',()=>{page=Math.max(0,Math.ceil(filtered.length/PAGE)-1);render();});
+document.getElementById('pg-jump').addEventListener('change',e=>{
+  const v=parseInt(e.target.value)-1;
+  const max=Math.ceil(filtered.length/PAGE)-1;
+  page=Math.max(0,Math.min(max,v));
+  e.target.value='';
+  render();
+});
+
+// ===== TAB SWITCHING =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='pizza') drawBoth();
+  if(tab==='gk' && allGKPlayers.length) drawBothGK();
+}
+
+// ===== PIZZA CHART =====
+// Groups: 'def' = Defending, 'pos' = Possession, 'fin' = Final Third
+const PIZZA_STATS = {
+  DEF: {
+    'Dribbles':  {key:'Drb/90',                th:[0.04,0.08,0.55,1.75],    g:'fin'},
+    'xA/90':     {key:'xA/90',                 th:[0.02,0.03,0.06,0.13],    g:'fin'},
+    'xG/90':     {key:'xG/90',                 th:[0.01,0.02,0.03,0.04],    g:'fin'},
+    'Goals':     {key:'Goals per 90 minutes',  th:[0.01,0.02,0.03,0.05],    g:'fin'},
+    'Shots':     {key:'Shot/90',               th:[0.25,0.34,0.48,0.68],    g:'fin'},
+    'Poss Lost': {key:'Poss Lost/90',          th:[12.01,8.18,4.90,4.05],   g:'pos', inv:true},
+    'Pass Cmp':  {key:'Ps A/90',               th:[50.96,56.45,62.33,69.88],g:'pos'},
+    'Prog Pass': {key:'Pr passes/90',          th:[3.19,4.44,6.18,7.95],    g:'pos'},
+    'Hdr Vol':   {key:'Aer A/90',              th:[3.15,3.82,4.57,5.35],    g:'def'},
+    'Hdr Qual':  {key:'Hdr %',                 th:[52.4,60.8,65.6,70.7],    g:'def'},
+    'Tkl Vol':   {key:'Tck A',                 th:[0.87,1.07,2.25,3.48],    g:'def', per90:true},
+    'Tkl Qual':  {key:'Tck R',                 th:[60,70,78,84],            g:'def'},
+    'Poss Won':  {key:'Poss Won/90',           th:[8.33,9.09,9.77,10.54],   g:'def'},
+  },
+  MID: {
+    'Dribbles':  {key:'Drb/90',                th:[0.22,0.37,0.72,1.56],    g:'fin'},
+    'xA/90':     {key:'xA/90',                 th:[0.06,0.09,0.13,0.19],    g:'fin'},
+    'xG/90':     {key:'xG/90',                 th:[0.04,0.06,0.11,0.22],    g:'fin'},
+    'Goals':     {key:'Goals per 90 minutes',  th:[0.04,0.07,0.11,0.23],    g:'fin'},
+    'Shots':     {key:'Shot/90',               th:[0.88,1.17,1.57,2.02],    g:'fin'},
+    'Poss Lost': {key:'Poss Lost/90',          th:[10.21,8.44,7.15,6.04],   g:'pos', inv:true},
+    'Pass Cmp':  {key:'Ps A/90',               th:[48.62,54.66,60.74,68.83],g:'pos'},
+    'Prog Pass': {key:'Pr passes/90',          th:[3.69,5.02,5.82,6.91],    g:'pos'},
+    'Hdr Vol':   {key:'Aer A/90',              th:[1.67,2.16,2.64,3.45],    g:'def'},
+    'Hdr Qual':  {key:'Hdr %',                 th:[27.0,36.1,44.8,54.4],    g:'def'},
+    'Tkl Vol':   {key:'Tck A',                 th:[1.49,1.98,2.34,2.72],    g:'def', per90:true},
+    'Tkl Qual':  {key:'Tck R',                 th:[65,73,80,87],            g:'def'},
+    'Poss Won':  {key:'Poss Won/90',           th:[5.63,6.92,7.82,8.53],    g:'def'},
+  },
+  FWD: {
+    'Dribbles':  {key:'Drb/90',                th:[0.84,1.63,3.43,5.62],    g:'fin'},
+    'xA/90':     {key:'xA/90',                 th:[0.12,0.16,0.21,0.26],    g:'fin'},
+    'xG/90':     {key:'xG/90',                 th:[0.21,0.26,0.32,0.40],    g:'fin'},
+    'Goals':     {key:'Goals per 90 minutes',  th:[0.22,0.29,0.37,0.47],    g:'fin'},
+    'Shots':     {key:'Shot/90',               th:[1.96,2.22,2.47,2.81],    g:'fin'},
+    'Poss Lost': {key:'Poss Lost/90',          th:[14.95,12.36,8.53,6.12],  g:'pos', inv:true},
+    'Pass Cmp':  {key:'Ps A/90',               th:[28.63,35.10,43.27,50.29],g:'pos'},
+    'Prog Pass': {key:'Pr passes/90',          th:[0.98,2.10,3.55,4.75],    g:'pos'},
+    'Hdr Vol':   {key:'Aer A/90',              th:[2.92,3.60,4.94,6.86],    g:'def'},
+    'Hdr Qual':  {key:'Hdr %',                 th:[19.5,26.9,33.5,40.3],    g:'def'},
+    'Tkl Vol':   {key:'Tck A',                 th:[0.48,1.24,2.34,2.94],    g:'def', per90:true},
+    'Tkl Qual':  {key:'Tck R',                 th:[55,65,73,80],            g:'def'},
+    'Poss Won':  {key:'Poss Won/90',           th:[2.47,4.16,6.52,7.52],    g:'def'},
+  }
+};
+
+const FLAGS = {
+  ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',WAL:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',NIR:'🇬🇧',IRL:'🇮🇪',
+  JPN:'🇯🇵',KOR:'🇰🇷',CHN:'🇨🇳',AUS:'🇦🇺',NZL:'🇳🇿',
+  BRA:'🇧🇷',ARG:'🇦🇷',COL:'🇨🇴',CHI:'🇨🇱',URU:'🇺🇾',VEN:'🇻🇪',PAR:'🇵🇾',ECU:'🇪🇨',PER:'🇵🇪',BOL:'🇧🇴',
+  USA:'🇺🇸',CAN:'🇨🇦',MEX:'🇲🇽',CRC:'🇨🇷',PAN:'🇵🇦',HON:'🇭🇳',GUA:'🇬🇹',JAM:'🇯🇲',TRI:'🇹🇹',CUB:'🇨🇺',DOM:'🇩🇴',HAI:'🇭🇹',
+  GER:'🇩🇪',FRA:'🇫🇷',ESP:'🇪🇸',ITA:'🇮🇹',POR:'🇵🇹',NED:'🇳🇱',BEL:'🇧🇪',SUI:'🇨🇭',AUT:'🇦🇹',
+  SWE:'🇸🇪',NOR:'🇳🇴',DEN:'🇩🇰',FIN:'🇫🇮',ISL:'🇮🇸',
+  RUS:'🇷🇺',UKR:'🇺🇦',POL:'🇵🇱',CZE:'🇨🇿',SVK:'🇸🇰',HUN:'🇭🇺',ROU:'🇷🇴',BUL:'🇧🇬',
+  CRO:'🇭🇷',SRB:'🇷🇸',SVN:'🇸🇮',BIH:'🇧🇦',MNE:'🇲🇪',ALB:'🇦🇱',MKD:'🇲🇰',GRE:'🇬🇷',TUR:'🇹🇷',
+  ISR:'🇮🇱',SAU:'🇸🇦',UAE:'🇦🇪',QAT:'🇶🇦',IRN:'🇮🇷',IRQ:'🇮🇶',JOR:'🇯🇴',LIB:'🇱🇧',
+  NGA:'🇳🇬',GHA:'🇬🇭',CMR:'🇨🇲',CIV:'🇨🇮',SEN:'🇸🇳',MAR:'🇲🇦',TUN:'🇹🇳',ALG:'🇩🇿',EGY:'🇪🇬',RSA:'🇿🇦',
+  COD:'🇨🇩',ANG:'🇦🇴',GAM:'🇬🇲',GUI:'🇬🇳',BFA:'🇧🇫',MLI:'🇲🇱',TOG:'🇹🇬',SLE:'🇸🇱',
+  CUW:'🇨🇼',SUR:'🇸🇷',GUY:'🇬🇾',MNT:'🇲🇸',
+  IND:'🇮🇳',PAK:'🇵🇰',THA:'🇹🇭',VIE:'🇻🇳',PHI:'🇵🇭',INA:'🇮🇩',MAS:'🇲🇾',SGP:'🇸🇬',
+  // Based In country names (FM uses full names for Based In)
+  England:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',Scotland:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',Wales:'🏴󠁧󠁢󠁷󠁬󠁳󠁿','Northern Ireland':'🇬🇧',Ireland:'🇮🇪',
+  Japan:'🇯🇵','South Korea':'🇰🇷',Australia:'🇦🇺',
+  Brazil:'🇧🇷',Argentina:'🇦🇷',Colombia:'🇨🇴',Chile:'🇨🇱',Uruguay:'🇺🇾',
+  'United States':'🇺🇸',USA:'🇺🇸',Canada:'🇨🇦',Mexico:'🇲🇽',
+  Germany:'🇩🇪',France:'🇫🇷',Spain:'🇪🇸',Italy:'🇮🇹',Portugal:'🇵🇹',Netherlands:'🇳🇱',
+  Belgium:'🇧🇪',Switzerland:'🇨🇭',Austria:'🇦🇹',Sweden:'🇸🇪',Norway:'🇳🇴',Denmark:'🇩🇰',
+  Finland:'🇫🇮',Iceland:'🇮🇸',Poland:'🇵🇱','Czech Republic':'🇨🇿',Slovakia:'🇸🇰',Hungary:'🇭🇺',
+  Romania:'🇷🇴',Bulgaria:'🇧🇬',Croatia:'🇭🇷',Serbia:'🇷🇸',Slovenia:'🇸🇮',Greece:'🇬🇷',Turkey:'🇹🇷',
+  Russia:'🇷🇺',Ukraine:'🇺🇦',Nigeria:'🇳🇬',Ghana:'🇬🇭',Senegal:'🇸🇳',Morocco:'🇲🇦',
+  'South Africa':'🇿🇦','Ivory Coast':'🇨🇮',"Côte d'Ivoire":'🇨🇮',
+};
+
+function getFlag(code) { return FLAGS[code] || ''; }
+
+function getPizzaPct(val, th, inv) {
+  const [p20,p40,p60,p80] = th;
+  if(inv){ if(val<=p80) return 92; if(val<=p60) return 72; if(val<=p40) return 52; if(val<=p20) return 32; return 12; }
+  if(val>=p80) return 92; if(val>=p60) return 72; if(val>=p40) return 52; if(val>=p20) return 32; return 12;
+}
+
+function getPizzaBand(pct) {
+  if(pct>=80) return '>80th'; if(pct>=60) return '60–80th'; if(pct>=40) return '40–60th'; if(pct>=20) return '20–40th'; return '<20th';
+}
+
+function getPizzaCardColor(pct) {
+  if(pct>=80) return '#4ade80'; if(pct>=60) return '#86efac'; if(pct>=40) return '#fbbf24'; if(pct>=20) return '#fb923c'; return '#f87171';
+}
+
+const pizzaMode = 'prop';
+
+// Calculate in-file percentile for a value within the loaded dataset
+function getInFilePct(val, statKey, grp, inv, per90) {
+  const vals = allPlayers
+    .filter(p => p._group === grp)
+    .map(p => {
+      const raw = parseFloat(p[statKey]) || 0;
+      if(!per90) return raw;
+      const mins = parseFloat(p['Minutes']) || 90;
+      return (raw / mins) * 90;
+    })
+    .sort((a,b) => a-b);
+  if(!vals.length) return 0.5;
+  const n = vals.length;
+  const below = vals.filter(v => v < val).length;
+  const equal = vals.filter(v => v === val).length;
+  // Mid-rank formula: player at minimum gets (equal*0.5)/n, not 0
+  const pct = (below + equal * 0.5) / n;
+  return Math.max(0.06, inv ? 1 - pct : pct);
+}
+
+// Get the in-file position of the 80th Mustermann threshold (for reference ring)
+function getThresholdInFilePct(th80, statKey, grp, inv, per90) {
+  return getInFilePct(th80, statKey, grp, inv, per90);
+}
+
+function hexToRgba(hex, alpha) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Get stat value, converting raw total to per-90 if flagged
+function getStatVal(player, statKey, per90) {
+  const val = parseFloat(player[statKey]) || 0;
+  if(!per90) return val;
+  const mins = parseFloat(player['Minutes']) || 90;
+  return (val / mins) * 90;
+}
+
+function drawOneChart(canvasId, metaId, cardsId, playerName, grp) {
+  const player = allPlayers.find(p=>p.Player===playerName);
+  if(!player) return;
+
+  const stats = PIZZA_STATS[grp];
+  const labels = Object.keys(stats);
+  const n = labels.length;
+  const rawVals = labels.map(l => getStatVal(player, stats[l].key, stats[l].per90||false));
+  const pcts = labels.map((l,i) => getPizzaPct(rawVals[i], stats[l].th, stats[l].inv||false));
+
+  const natFlag   = getFlag(player['Nation'] || '');
+  const clubFlag  = getFlag(player['Based In'] || '');
+  const metaEl = document.getElementById(metaId);
+  metaEl.innerHTML = `${natFlag} <strong style="color:var(--text)">${player['Nation']||''}</strong> &nbsp;·&nbsp; ${player['Best Pos']||''} &nbsp;·&nbsp; Age ${player.Age||''} &nbsp;·&nbsp; ${clubFlag} ${player['Club']||''} &nbsp;·&nbsp; ${player.Minutes||''} mins`;
+
+  const canvas = document.getElementById(canvasId);
+  const dpr = window.devicePixelRatio || 1;
+  const DISPLAY = 460;
+  canvas.width  = DISPLAY * dpr;
+  canvas.height = DISPLAY * dpr;
+  canvas.style.width  = DISPLAY + 'px';
+  canvas.style.height = DISPLAY + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, DISPLAY, DISPLAY);
+
+  const cx = DISPLAY/2, cy = DISPLAY/2;
+  const maxR = DISPLAY * 0.28;
+  const labelR = maxR + DISPLAY * 0.105;
+  const sliceAngle = (2*Math.PI)/n;
+  const startAngle = -Math.PI/2;
+
+  // Three zone colours
+  const defHex = document.getElementById('colour-def').value;
+  const posHex = document.getElementById('colour-pos').value;
+  const atkHex = document.getElementById('colour-atk').value;
+  const ZONE_COL = {
+    def: hexToRgba(defHex, 0.88),
+    pos: hexToRgba(posHex, 0.88),
+    fin: hexToRgba(atkHex, 0.88),
+  };
+  const ZONE_DOT = {
+    def: hexToRgba(defHex, 0.9),
+    pos: hexToRgba(posHex, 0.9),
+    fin: hexToRgba(atkHex, 0.9),
+  };
+  const ZONE_CARD = {
+    def: hexToRgba(defHex, 0.4),
+    pos: hexToRgba(posHex, 0.4),
+    fin: hexToRgba(atkHex, 0.4),
+  };
+
+  // Zone averages
+  const ZONES = ['def','pos','fin'];
+  const zoneAvgs = {};
+  ZONES.forEach(z=>{
+    const zPcts = labels.filter(l=>stats[l].g===z).map(l=>pcts[labels.indexOf(l)]);
+    zoneAvgs[z] = zPcts.length ? Math.round(zPcts.reduce((a,b)=>a+b,0)/zPcts.length) : 0;
+  });
+
+  // Remap raw percentile (0–1) so 80th sits at 0.92 of radius
+  // Below 80th: scale 0–0.8 → 0.06–0.92. Above 80th: scale 0.8–1.0 → 0.92–0.99
+  function remapRadius(pct) {
+    if(pct <= 0.8) return 0.06 + (pct / 0.8) * (0.92 - 0.06);
+    return 0.92 + ((pct - 0.8) / 0.2) * (0.99 - 0.92);
+  }
+
+  // Ring guides — draw at remapped positions for 25/50/75/100th pct
+  [0.25,0.5,0.75,1.0].forEach(frac=>{
+    ctx.beginPath(); ctx.arc(cx,cy,maxR*remapRadius(frac),0,2*Math.PI);
+    ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // Dividers
+  for(let i=0;i<n;i++){
+    const ang=startAngle+i*sliceAngle;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(ang)*maxR, cy+Math.sin(ang)*maxR);
+    ctx.strokeStyle='rgba(14,17,23,0.95)'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+
+  // In-file proportional mode: dashed reference ring at avg 80th threshold position
+  if(pizzaMode === 'prop') {
+    const refFracs = labels.map(l => {
+      const s = stats[l];
+      return getThresholdInFilePct(s.th[3], s.key, grp, s.inv||false, s.per90||false);
+    });
+    const avgRef = Math.max(0.1, refFracs.reduce((a,b)=>a+b,0)/refFracs.length);
+    const ringR = remapRadius(avgRef);
+    ctx.beginPath(); ctx.arc(cx,cy,maxR*ringR,0,2*Math.PI);
+    ctx.strokeStyle='rgba(220,220,220,0.25)'; ctx.lineWidth=1.2;
+    ctx.setLineDash([4,5]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(220,220,220,0.35)';
+    ctx.font=`8px Segoe UI,system-ui,sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText('80th', cx, cy - maxR*ringR - 3);
+  }
+
+  // Slices — radius from in-file percentile, remapped so 80th = 92% radius
+  for(let i=0;i<n;i++){
+    const l=labels[i];
+    const rawPct = Math.min(0.99, Math.max(0.06, getInFilePct(rawVals[i], stats[l].key, grp, stats[l].inv||false, stats[l].per90||false)));
+    const r = remapRadius(rawPct) * maxR;
+    const aStart=startAngle+i*sliceAngle, aEnd=aStart+sliceAngle;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,aStart,aEnd); ctx.closePath();
+    ctx.fillStyle=ZONE_COL[stats[l].g]; ctx.fill();
+    ctx.strokeStyle='rgba(14,17,23,0.95)'; ctx.lineWidth=1.2; ctx.stroke();
+  }
+  const cR=maxR*0.14;
+  ctx.beginPath(); ctx.arc(cx,cy,cR,0,2*Math.PI);
+  ctx.fillStyle='#161b27'; ctx.fill();
+  ctx.strokeStyle='rgba(200,175,90,0.55)'; ctx.lineWidth=1.2; ctx.stroke();
+  ctx.fillStyle='rgba(220,195,110,0.95)';
+  ctx.font=`bold ${Math.round(cR*0.65)}px Segoe UI,system-ui,sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(grp, cx, cy);
+
+  // Labels at midAngle — with edge clamping to fix left overflow
+  for(let i=0;i<n;i++){
+    const l=labels[i];
+    const midAngle=startAngle+i*sliceAngle+sliceAngle/2;
+    let lx=cx+Math.cos(midAngle)*labelR;
+    const ly=cy+Math.sin(midAngle)*labelR;
+
+    const cosA=Math.cos(midAngle);
+    const align = cosA>0.05?'left':cosA<-0.05?'right':'center';
+    ctx.textAlign=align;
+
+    // Clamp label x so text stays inside canvas with 6px padding
+    const PAD=6;
+    const approxW=38; // rough max text width
+    if(align==='right' && lx-approxW < PAD) lx = approxW + PAD;
+    if(align==='left'  && lx+approxW > DISPLAY-PAD) lx = DISPLAY-PAD-approxW;
+
+    // Dot
+    const dotDist=maxR+DISPLAY*0.016;
+    ctx.beginPath(); ctx.arc(cx+Math.cos(midAngle)*dotDist, cy+Math.sin(midAngle)*dotDist, 2.5,0,2*Math.PI);
+    ctx.fillStyle=ZONE_DOT[stats[l].g]; ctx.fill();
+
+    // Stat name — clean label, secondary % on value line where applicable
+    let displayLabel = l + (stats[l].inv ? '↓' : '');
+    let displayVal = rawVals[i].toFixed(2);
+
+    if(l === 'Hdr Qual' || l === 'Tkl Qual') {
+      displayVal = `${rawVals[i].toFixed(0)}%`;
+    }
+    ctx.fillStyle='rgba(190,200,215,0.92)'; ctx.font='9.5px Segoe UI,system-ui,sans-serif';
+    ctx.fillText(displayLabel, lx, ly-5.5);
+    // Value line
+    ctx.fillStyle=getPizzaCardColor(pcts[i]); ctx.font='600 9.5px Segoe UI,system-ui,sans-serif';
+    ctx.fillText(displayVal, lx, ly+5.5);
+  }
+
+  // Calculate in-file percentiles for all stats (for display in cards + zone bars)
+  const inFilePcts = labels.map((l,i) => {
+    const raw = getInFilePct(rawVals[i], stats[l].key, grp, stats[l].inv||false, stats[l].per90||false);
+    return Math.min(99, Math.round(raw * 100));
+  });
+
+  // Transfer value display
+  const valStr = player['Transfer Value'] ? player['Transfer Value'].trim() : '—';
+
+  // Zone averages — use in-file percentiles
+  const ZONE_ORDER = ['fin','pos','def'];
+  const ZONE_LABEL = {fin:'Final Third', pos:'Possession', def:'Defending'};
+  const ZONE_ICON  = {fin:'⚡', pos:'🔄', def:'🥅'};
+
+  let html = '';
+
+  // Value + zone averages row
+  html += `<div style="grid-column:1/-1;display:flex;gap:8px;align-items:stretch;margin-bottom:4px;flex-wrap:wrap;">`;
+  // Value box
+  html += `<div style="background:var(--bg3);border-radius:6px;padding:8px 12px;border:1px solid var(--border2);min-width:90px;flex-shrink:0;">
+    <div style="font-size:8.5px;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Transfer Value</div>
+    <div style="font-size:13px;font-weight:700;color:var(--text);">${valStr}</div>
+  </div>`;
+  // Zone avg bars — in-file percentiles
+  html += `<div style="flex:1;background:var(--bg3);border-radius:6px;padding:8px 12px;border:1px solid var(--border2);display:flex;flex-direction:column;gap:5px;min-width:160px;">`;
+  ZONE_ORDER.forEach(zone=>{
+    const zIdxs = labels.map((l,i)=>stats[l].g===zone?i:-1).filter(i=>i>=0);
+    const avgInFile = zIdxs.length ? Math.round(zIdxs.reduce((a,i)=>a+inFilePcts[i],0)/zIdxs.length) : 0;
+    const col = getPizzaCardColor(avgInFile);
+    const barCol = ZONE_COL[zone]||'rgba(100,100,100,0.5)';
+    html += `<div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:9px;color:${barCol};width:72px;white-space:nowrap;">${ZONE_ICON[zone]} ${ZONE_LABEL[zone]}</span>
+      <div style="flex:1;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;">
+        <div style="width:${avgInFile}%;height:100%;background:${barCol};border-radius:3px;"></div>
+      </div>
+      <span style="font-size:9px;font-weight:700;color:${col};min-width:32px;text-align:right;">${avgInFile}th</span>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  // Stat cards — show in-file percentile number, colour from Mustermann band
+  ZONE_ORDER.forEach(zone=>{
+    const zLabels = labels.filter(l=>stats[l].g===zone);
+    if(!zLabels.length) return;
+    html += `<div style="grid-column:1/-1;font-size:8.5px;font-weight:700;color:${ZONE_DOT[zone]};text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;margin-bottom:2px;">${ZONE_ICON[zone]} ${ZONE_LABEL[zone]}</div>`;
+    zLabels.forEach(l=>{
+      const i=labels.indexOf(l);
+      const musterCol = getPizzaCardColor(pcts[i]);      // colour from Mustermann band
+      const inFilePct = inFilePcts[i];                   // number from in-file rank
+      const ordinal = (n => {
+        const s = ['th','st','nd','rd'], v = n % 100;
+        return n + (s[(v-20)%10] || s[v] || s[0]);
+      })(inFilePct);
+      html += `<div style="background:var(--bg3);border-radius:5px;padding:5px 6px;text-align:center;border-top:2px solid ${ZONE_CARD[zone]};">
+        <div style="font-size:8px;color:var(--text2);margin-bottom:2px;">${l}${stats[l].inv?'↓':''}</div>
+        <div style="font-size:11px;font-weight:600;color:${musterCol};">${rawVals[i].toFixed(2)}</div>
+        <div style="font-size:8px;color:${musterCol};">${ordinal}</div>
+      </div>`;
+    });
+  });
+
+  document.getElementById(cardsId).innerHTML = html;
+}
+
+function filterPizzaPlayers(side) {
+  const query = document.getElementById(`pizza-search-${side}`).value.toLowerCase();
+  const sel = document.getElementById(`pizza-player-${side}`);
+  const sorted = [...allPlayers].filter(p=>p['Best Pos'] && !p['Best Pos'].includes('GK'))
+    .sort((a,b)=>(a.Player||'').localeCompare(b.Player||''));
+  sel.innerHTML = '';
+  sorted.filter(p => p.Player.toLowerCase().includes(query)).forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p.Player;
+    opt.textContent = `${p.Player} (${p['Best Pos']||''}, ${p.Age||''})`;
+    sel.appendChild(opt);
+  });
+}
+
+function drawBoth() {
+  const pA=document.getElementById('pizza-player-a').value;
+  const pB=document.getElementById('pizza-player-b').value;
+  const gA=document.getElementById('pizza-group-a').value;
+  const gB=document.getElementById('pizza-group-b').value;
+  if(pA) drawOneChart('pizza-canvas-a','pizza-meta-a','pizza-cards-a',pA,gA);
+  if(pB) drawOneChart('pizza-canvas-b','pizza-meta-b','pizza-cards-b',pB,gB);
+}
+
+document.getElementById('pizza-player-a').addEventListener('change',()=>{
+  const p=allPlayers.find(x=>x.Player===document.getElementById('pizza-player-a').value);
+  if(p&&p._group!=='GK') document.getElementById('pizza-group-a').value=p._group;
+});
+document.getElementById('pizza-player-b').addEventListener('change',()=>{
+  const p=allPlayers.find(x=>x.Player===document.getElementById('pizza-player-b').value);
+  if(p&&p._group!=='GK') document.getElementById('pizza-group-b').value=p._group;
+});
+document.getElementById('pizza-reset-colours').addEventListener('click',()=>{
+  document.getElementById('colour-def').value='#5082b9';
+  document.getElementById('colour-pos').value='#22c55e';
+  document.getElementById('colour-atk').value='#eab308';
+  drawBoth();
+});
+document.getElementById('colour-atk').addEventListener('input',drawBoth);
+document.getElementById('colour-def').addEventListener('input',drawBoth);
+document.getElementById('colour-pos').addEventListener('input',drawBoth);
+</script>
+</body>
+</html>
